@@ -8,7 +8,9 @@ const {chromium}=require('playwright');
  // Drive the shipped, unpacked interval deterministically. No substitute engine.
  await page.addInitScript(()=>{window.__deaths=0;history.go=()=>window.__deaths++;window.setInterval=code=>{window.__program=code;window.__tick=()=>typeof code==='function'?code():(0,eval)(code);return 1;}});
  const url=process.env.GAME_URL||'file://'+process.cwd()+'/public/1k.html';
- const response=await page.goto(url);if(response&&url.startsWith('http'))assert.deepEqual(await response.body(),bytes);
+ // CDP's text response drops the BOM. Fetch raw bytes for the file-size audit.
+ if(url.startsWith('http'))assert.deepEqual(Buffer.from(await(await fetch(url)).arrayBuffer()),bytes);
+ await page.goto(url);
  await page.waitForFunction(()=>window.__tick);await page.evaluate(()=>__tick());
  assert.equal(await page.evaluate(()=>document.characterSet),'UTF-8');
  const names=await page.evaluate(()=>{const m=__program.match(/d=hypot\((\w+),(\w+)\)/);return {x:m[1],y:m[2],score:__program.match(/(\w+)\+=100/)[1],wave:__program.match(/(\w+)\*=\.95/)[1],impact:__program.match(/cos\(i-(\w+)\)/)[1]};});
