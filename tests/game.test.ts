@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import {Game} from '../lib/game.ts';
+const idle={x:0,y:0,fire:false};
+const game=new Game();game.enemies=[];game.shoot();assert.equal(game.shots,1);assert.equal(game.bullets[0].vy,0);assert.ok(game.bullets[0].vx<0);
+for(let i=0;i<240;i++)game.step(1/120,idle);
+assert.ok(game.bullets[0].bounces>0,'Bullet must ricochet');
+for(let i=0;i<200;i++)game.step(1/120,idle);
+assert.ok(game.dead,'Own returning bullet must kill stationary ship');
+const kill=new Game();kill.enemies=[{x:90,y:64,vx:0,vy:0,age:0,bounces:0}];kill.shoot();for(let i=0;i<30;i++)kill.step(1/120,idle);assert.equal(kill.score,100);assert.equal(kill.enemies.length,0);
+const boundary=new Game();boundary.enemies=[];for(let i=0;i<120;i++)boundary.step(1/120,{x:1,y:1,fire:false});assert.ok(Math.hypot(boundary.player.x-64,boundary.player.y-64)<=53.01);
+console.log('PASS: center aim, ricochet, self-hit, target score, arena confinement');
+
+const once=new Game();once.enemies=[];once.shoot();once.player={x:64,y:100};once.spawnClock=-100;
+for(let i=0;i<180;i++)once.step(1/120,idle);
+assert.equal(once.bullets.length,1,'Bullet survives first wall hit');
+assert.equal(once.bullets[0].bounces,1);
+for(let i=0;i<180;i++)once.step(1/120,idle);
+assert.equal(once.bullets.length,0,'Second wall hit destroys bullet');
+assert.ok(!once.dead);
+console.log('PASS: exactly one ricochet, removal on second wall hit');
